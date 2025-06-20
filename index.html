@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FreeVPN Secure Installer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+    }
+    #installer {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      text-align: center;
+      padding: 2rem;
+    }
+    #installer h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    #installer p {
+      font-size: clamp(1rem, 3vw, 1.2rem);
+      max-width: 600px;
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+    #install-btn {
+      padding: 0.8rem 2rem;
+      font-size: clamp(1rem, 3vw, 1.1rem);
+      background-color: #28a745;
+      border: none;
+      color: white;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: transform 0.2s, background-color 0.2s;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    #install-btn:hover {
+      background-color: #218838;
+      transform: scale(1.05);
+    }
+    #prank-ui {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #0a0a0a;
+      color: #00FF00;
+      font-family: "Courier New", monospace;
+      padding: 2rem;
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      white-space: pre-wrap;
+      animation: insaneFlicker 0.07s infinite alternate;
+    }
+    .glitch {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: repeating-linear-gradient(45deg, black 0px, #0b0b0b 3px, black 6px);
+      opacity: 0.2;
+      pointer-events: none;
+      z-index: 999;
+      animation: glitchAnim 0.09s infinite;
+    }
+    .red-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: red;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 998;
+      animation: pulseRed 1.2s infinite;
+    }
+    .bsod {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #0000AA;
+      color: white;
+      font-family: "Courier New", monospace;
+      padding: 2rem;
+      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      z-index: 1002;
+      animation: glitchBSOD 0.1s infinite;
+    }
+    .error-popup {
+      position: fixed;
+      background: #1a1a1a;
+      color: red;
+      border: 3px solid #ff0000;
+      padding: 1rem;
+      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      font-family: "Arial", sans-serif;
+      z-index: 1000;
+      animation: popupShake 0.15s infinite;
+      box-shadow: 0 0 15px red;
+      font-weight: bold;
+      text-align: center;
+      max-width: 80%;
+    }
+    .file-deletion {
+      position: fixed;
+      bottom: 3rem;
+      right: 1rem;
+      width: clamp(200px, 30vw, 300px);
+      background: #000;
+      color: #00FF00;
+      font-family: "Courier New", monospace;
+      padding: 0.8rem;
+      border: 2px solid red;
+      font-size: clamp(0.8rem, 2vw, 0.9rem);
+    }
+    .network-scan {
+      position: fixed;
+      top: 3rem;
+      right: 1rem;
+      width: clamp(200px, 30vw, 300px);
+      background: #000;
+      color: #00FF00;
+      font-family: "Courier New", monospace;
+      padding: 0.8rem;
+      border: 2px solid red;
+      font-size: clamp(0.8rem, 2vw, 0.9rem);
+    }
+    .glitch-text {
+      position: fixed;
+      color: #ff0000;
+      font-family: "Courier New", monospace;
+      font-size: clamp(0.8rem, 2vw, 1rem);
+      opacity: 0.7;
+      animation: floatText 3s linear forwards;
+      pointer-events: none;
+      z-index: 1001;
+    }
+    .progress-bar {
+      position: fixed;
+      bottom: 1rem;
+      left: 1rem;
+      width: clamp(200px, 30vw, 300px);
+      height: 20px;
+      background: #333;
+      border: 2px solid red;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: red;
+      width: 0;
+      animation: fillBar 7s linear forwards;
+    }
+    @keyframes insaneFlicker {
+      from { opacity: 1; }
+      to { opacity: 0.5; }
+    }
+    @keyframes glitchAnim {
+      0% { transform: translate(0,0); }
+      50% { transform: translate(4px,-4px); }
+      100% { transform: translate(-4px,4px); }
+    }
+    @keyframes pulseRed {
+      0% { opacity: 0; }
+      50% { opacity: 0.4; }
+      100% { opacity: 0; }
+    }
+    @keyframes glitchBSOD {
+      0% { transform: skew(0deg); }
+      50% { transform: skew(2deg); }
+      100% { transform: skew(-2deg); }
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    @keyframes popupShake {
+      0% { transform: translate(0,0); }
+      50% { transform: translate(5px,-5px); }
+      100% { transform: translate(-5px,5px); }
+    }
+    @keyframes floatText {
+      0% { transform: translate(0,0); opacity: 0.7; }
+      100% { transform: translate(100vw, -100vh); opacity: 0; }
+    }
+    @keyframes fillBar {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+    @keyframes shakeWindow {
+      0% { transform: translate(0,0); }
+      25% { transform: translate(7px,7px); }
+      50% { transform: translate(-7px,-7px); }
+      75% { transform: translate(7px,-7px); }
+      100% { transform: translate(-7px,7px); }
+    }
+    .red-alert {
+      color: red;
+      font-weight: bold;
+      animation: blink 0.1s infinite;
+    }
+    .blackout {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+      z-index: 1003;
+      display: none;
+    }
+    .inverted {
+      filter: invert(100%);
+    }
+    @media (max-width: 600px) {
+      #installer {
+        padding: 1rem;
+      }
+      #install-btn {
+        padding: 0.6rem 1.5rem;
+      }
+      #prank-ui {
+        padding: 1rem;
+      }
+      .error-popup {
+        max-width: 90%;
+        padding: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Fake Installer UI -->
+  <div id="installer">
+    <h1>FreeVPN Secure</h1>
+    <p>Protect your online privacy with our fast, secure, and completely free VPN. Install now to browse safely!</p>
+    <button id="install-btn">Download & Install</button>
+  </div>
+
+  <!-- Hidden Prank UI -->
+  <div class="glitch" style="display:none;"></div>
+  <div class="red-overlay" style="display:none;"></div>
+  <div class="blackout" id="blackout"></div>
+  <div class="bsod" id="bsod"></div>
+  <div id="prank-ui"></div>
+  <div id="error-popups"></div>
+  <div class="progress-bar" style="display:none;">
+    <div class="progress-fill"></div>
+  </div>
+  <div class="file-deletion" id="file-deletion" style="display:none;"></div>
+  <div class="network-scan" id="network-scan" style="display:none;"></div>
+
+  <audio id="sound" src="https://www.fesliyanstudios.com/play-mp3/6998" autoplay loop></audio>
+  <audio id="voice" src="https://www.fesliyanstudios.com/play-mp3/7042" preload="auto"></audio>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const prankUI = document.getElementById("prank-ui");
+      const glitch = document.querySelector(".glitch");
+      const redOverlay = document.querySelector(".red-overlay");
+      const blackout = document.getElementById("blackout");
+      const bsod = document.getElementById("bsod");
+      const progressBar = document.querySelector(".progress-bar");
+      const fileDeletion = document.getElementById("file-deletion");
+      const networkScan = document.getElementById("network-scan");
+      const errorPopups = document.getElementById("error-popups");
+      const audio = document.getElementById("sound");
+      const voice = document.getElementById("voice");
+      const installBtn = document.getElementById("install-btn");
+
+      if (!installBtn) {
+        console.error("Error: Element with id 'install-btn' not found.");
+        return;
+      }
+
+      const logLines = [
+        "[SYSTEM] Executing total system annihilation...",
+        "[INFECT] Deploying polymorphic rootkit...",
+        "[ALERT] Kernel memory obliterated...",
+        "[!] <span class='red-alert'>ENCRYPTING ALL DRIVES WITH QUANTUM CIPHER</span>",
+        "[+] Erasing critical system partitions...",
+        "[+] Wiping C:\\Users\\*\\*.*...",
+        "[+] Seizing control of network infrastructure...",
+        "[+] Broadcasting webcam feed to darknet...",
+        "[!] <span class='red-alert'>CRITICAL: CPU OVERCLOCK DETECTED - MELTDOWN</span>",
+        "[+] Transmitting data to C2 server 172.16.0.1...",
+        "[!] <span class='red-alert'>RANSOMWARE: PAY $25000 BTC OR LOSE EVERYTHING</span>",
+        "[!] <span class='red-alert'>IRREVERSIBLE HARDWARE DAMAGE IN PROGRESS</span>",
+        "[!] SYSTEM DESTRUCTION -- 6 seconds to annihilation",
+        "5...", "4...", "3...", "2...", "1...",
+        "<span class='red-alert'>TOTAL SYSTEM ANNIHILATION</span>",
+        "[!] <span class='red-alert'>DEVICE BRICKED...</span>"
+      ];
+
+      const fakeFiles = [
+        "C:\\Users\\Admin\\Photos\\wedding.jpg",
+        "C:\\Users\\Admin\\Documents\\bank_details.pdf",
+        "C:\\Windows\\System32\\ntoskrnl.exe",
+        "C:\\Users\\Admin\\Desktop\\crypto_wallet.dat",
+        "C:\\Users\\Admin\\Videos\\kids_birthday.mp4"
+      ];
+
+      const fakeDevices = [
+        "192.168.1.2 - Infected: Mobile Device",
+        "192.168.1.3 - Compromised: Smart TV",
+        "192.168.1.4 - Breached: Router",
+        "192.168.1.5 - Infected: Laptop",
+        "192.168.1.6 - Hacked: IoT Camera"
+      ];
+
+      installBtn.onclick = async () => {
+        try {
+          await document.documentElement.requestFullscreen();
+        } catch (e) {}
+
+        document.body.style.animation = "shakeWindow 0.07s infinite";
+        setTimeout(() => {
+          document.body.classList.add("inverted");
+          setTimeout(() => document.body.classList.remove("inverted"), 1000);
+        }, 5000);
+
+        installer.style.display = "none";
+        prankUI.style.display = "block";
+        glitch.style.display = "block";
+        redOverlay.style.display = "block";
+        progressBar.style.display = "block";
+        fileDeletion.style.display = "block";
+        networkScan.style.display = "block";
+        prankUI.innerText = "[BOOT] Initiating catastrophic system annihilation...\n";
+
+        let i = 0;
+        function typeLine() {
+          if (i < logLines.length) {
+            prankUI.innerHTML += logLines[i] + "\n";
+            if (i === 12) {
+              blackout.style.display = "block";
+              setTimeout(() => blackout.style.display = "none", 600);
+            }
+            if (i === 15) {
+              bsod.style.display = "block";
+              bsod.innerHTML = "SYSTEM CRASH\nIRQL_NOT_LESS_OR_EQUAL\n*** STOP: 0x0000000A\nHARDWARE FAILURE DETECTED\n<span class='red-alert'>DEVICE COMPROMISED BY HACKER</span>";
+              setTimeout(() => {
+                bsod.style.animation = "glitchBSOD 0.05s infinite";
+                bsod.innerHTML += "\n<span class='red-alert'>ALL DATA LOST - REBOOT USELESS</span>";
+              }, 2000);
+            }
+            i++;
+            setTimeout(typeLine, 350);
+          } else {
+            setTimeout(() => location.reload(), 7000);
+          }
+        }
+
+        typeLine();
+
+        let fileIndex = 0;
+        function deleteFile() {
+          if (fileIndex < fakeFiles.length) {
+            fileDeletion.innerHTML = `Deleting: ${fakeFiles[fileIndex]}\n`;
+            fileIndex++;
+            setTimeout(deleteFile, 800);
+          } else {
+            fileDeletion.innerHTML += "<span class='red-alert'>ALL DATA OBLITERATED</span>";
+          }
+        }
+        setTimeout(deleteFile, 2000);
+
+        let deviceIndex = 0;
+        function scanNetwork() {
+          if (deviceIndex < fakeDevices.length) {
+            networkScan.innerHTML = `Scanning Network...\n${fakeDevices[deviceIndex]}\n`;
+            deviceIndex++;
+            setTimeout(scanNetwork, 1000);
+          } else {
+            networkScan.innerHTML += "<span class='red-alert'>NETWORK FULLY COMPROMISED</span>";
+          }
+        }
+        setTimeout(scanNetwork, 3000);
+
+        const glitchPhrases = ["INFECTED", "HACKED", "DATA LOST", "SYSTEM GONE"];
+        function createGlitchText() {
+          const text = document.createElement("div");
+          text.className = "glitch-text";
+          text.innerText = glitchPhrases[Math.floor(Math.random() * glitchPhrases.length)];
+          text.style.top = Math.random() * window.innerHeight + "px";
+          text.style.left = Math.random() * window.innerWidth + "px";
+          document.body.appendChild(text);
+          setTimeout(() => text.remove(), 3000);
+        }
+        setInterval(createGlitchText, 800);
+
+        function fakeKeySpam() {
+          const spamText = ["x9#2k", "!@#q", "z$k5", "p*9m"];
+          prankUI.innerHTML += `<span class='red-alert'>${spamText[Math.floor(Math.random() * spamText.length)]}</span>\n`;
+        }
+        setInterval(fakeKeySpam, 1500);
+
+        const popupMessages = [
+          "SYSTEM ERROR: FATAL EXCEPTION 0xDEAD",
+          "ALERT: TOTAL DATA ERASURE DETECTED",
+          "WARNING: MALWARE OVERRIDE ACTIVE",
+          "CRITICAL: BOOTLOADER DESTROYED"
+        ];
+        function createPopup() {
+          const popup = document.createElement("div");
+          popup.className = "error-popup";
+          popup.style.top = Math.random() * (window.innerHeight - 100) + "px";
+          popup.style.left = Math.random() * (window.innerWidth - 250) + "px";
+          popup.innerText = popupMessages[Math.floor(Math.random() * popupMessages.length)];
+          errorPopups.appendChild(popup);
+          setTimeout(() => popup.remove(), 1500);
+        }
+        setInterval(createPopup, 800);
+
+        if (navigator.mediaDevices) {
+          navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+              const video = document.createElement("video");
+              video.srcObject = stream;
+              video.style.position = "fixed";
+              video.style.opacity = "0.3";
+              video.style.width = "100%";
+              video.style.height = "100%";
+              video.style.filter = "contrast(200%) brightness(50%)";
+              document.body.appendChild(video);
+              video.play();
+              setTimeout(() => {
+                stream.getTracks().forEach(t => t.stop());
+                video.remove();
+              }, 5000);
+            })
+            .catch(() => {});
+        }
+
+        setTimeout(() => {
+          voice.volume = 1.0;
+          voice.play();
+        }, 4000);
+
+        audio.volume = 1.0;
+      };
+
+      document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.shiftKey && e.altKey && e.code === "KeyE") {
+          document.exitFullscreen();
+          alert("PRANK EXITED.");
+          location.reload();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
